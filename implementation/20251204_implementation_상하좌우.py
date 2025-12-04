@@ -1,12 +1,12 @@
 n = int(input())
-plans = input().split() # RRRUDD
+plans = input().split()
 x,y = 1,1
 
 dx = [-1,1,0,0]
 dy = [0,0,-1,1]
 move = ['U','D','L','R']
 
-for plan in plans:  # RRRUDD
+for plan in plans:
     for i in range(len(move)):
         if plan == move[i]:
             nx = x + dx[i]
