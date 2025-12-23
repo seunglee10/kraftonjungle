@@ -1,43 +1,52 @@
-def balanced_index(p):
-    count = 0
-    for i in range(len(p)):
-        if p[i] == '(':
-            count += 1
-        else:
-            count -= 1
-        if count == 0:
-            return i
-
-def check_proper(p):
-    count = 0
-    for i in p:
-        if i == '(':
-            count += 1
-        else:
-            if count == 0:
-                return False
-            count -= 1
-    return True
+# 괄호 변환
 
 def solution(p):
-    answer = ''
-    if p =='':
-        return answer
-    index = balanced_index(p)
-    u = p[:index + 1]
-    v = p[index + 1:]
-    if check_proper(u):
-        answer = u + solution(v)
-    else:
-        answer = '('
-        answer += solution(v)
-        answer += ')'
-        u = list(u[1:-1])
-        for i in range(len(u)):
-            if u[i] == '(':
-                u[i] = ')'
-            else:
-                u[i] = '('
-        answer += ''.join(u)
-    return answer
+    return dfs(p)
 
+def dfs(p):
+    if p == '':
+        return p
+    
+    u, v = di_uv(p)
+
+    if correct(u) == True:
+        return u + dfs(v)
+
+    else:
+        emp = '(' + dfs(v) + ')'
+
+        for i in u[1:-1]:
+            if i == '(':
+                emp += ')'
+            else:
+                emp += '('
+        return emp
+            
+def di_uv(p):
+    left = 0
+    right = 0
+    for i in range(len(p)):
+        if p[i] == '(':
+            left +=1
+        elif p[i] == ')':
+            right +=1
+
+        if left == right:
+            u = p[:i+1]
+            v = p[i+1:]
+            return u, v
+        
+def correct(p):
+    left = 0
+    right = 0
+
+    for i in p:
+        if i == '(':
+            left += 1
+        elif i == ')':
+            right += 1
+
+        if left < right:
+            return False
+    return True
+solution(p)
