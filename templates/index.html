@@ -24,7 +24,6 @@
             margin-bottom: 30px;
         }
 
-        /* 핵심: 세로 우선 3열 */
         #card-list {
             column-count: 3;
             column-gap: 1rem;
@@ -32,28 +31,41 @@
 
         .card {
             break-inside: avoid;
-            margin-bottom: 12px;
+            min-height: 200px;
+            margin-bottom: 10px;
         }
 
+        .card.editing {
+            min-height: 200px;
+        }
         .link-like {
             cursor: pointer;
-            text-decoration: none;
             color: #0d6efd;
         }
-
+        
+        .btn-edit {
+            background-color: #17a2b8;
+            color: white;
+            border: none;
+        }
+        .btn-edit:hover {
+            background-color: #138496;
+        }
     </style>
 </head>
 
 <body>
 <div class="wrap">
-    <!-- 메모 작성 -->
+
+    <!-- 메모 작성 영역 (사진과 동일) -->
     <div class="post-box">
         <h1 class="display-4">
-            나홀로메모장 <span class="badge bg-secondary">ver2.0</span>
+            나홀로메모장
+            <span class="badge bg-secondary">ver2.0</span>
         </h1>
 
-        <form action="/memo" method="post" class="mt-4">
-            <div class="mb-3 col-md-6">
+        <form id="memo-form" class="mt-4">
+            <div class="mb-3 col-md-8">
                 <input
                     id="memo-title"
                     name="title"
@@ -64,7 +76,7 @@
                 >
             </div>
 
-            <div class="mb-3 col-md-6">
+            <div class="mb-3 col-md-8">
                 <textarea
                     id="memo-content"
                     name="content"
@@ -81,64 +93,119 @@
         </form>
     </div>
 
-    <!-- 메모 카드 목록 -->
+    <!-- 카드 목록 -->
     <div id="card-list">
         {% for memo in memos %}
-        <div class="card">
+        <div class="card" data-id="{{ memo._id }}">
             <div class="card-body">
-
-                {% if edit_id == memo._id %}
-                <!-- 수정 모드 -->
-                <div class="edit-form">
-                    <input id="edit-title-{{ memo._id }}" class="new-title form-control mb-2" value="{{ memo.title }}">
-                    <textarea id="edit-content-{{ memo._id }}" class="new-text form-control mb-2" rows="3">{{ memo.content }}</textarea>
-                    <button type="button" onclick="updateMemo('{{ memo._id }}')" class="save-button btn btn-success btn-sm">저장</button>
-                </div>
-                {% else %}
-                <!-- 일반 모드 -->
                 <h5 class="card-title">{{ memo.title }}</h5>
                 <p class="card-text">{{ memo.content }}</p>
-
                 <div class="mb-2">
                     <span class="card-likes">{{ memo.likes }}</span>
                 </div>
+                <button
+                    class="edit-button btn btn-edit"
+                    onclick="enterEditMode(this)">
+                    수정
+                </button>
 
-                <div>
-                    <a href="/edit/{{ memo._id }}" class="btn btn-sm btn-outline-primary edit-button">수정</a>
-                    <a href="/delete/{{ memo._id }}" class="btn btn-sm btn-outline-danger delete-button">삭제</a>
-                    <a href="/like/{{ memo._id }}" class="link-like ms-2">좋아요! 👍</a>
-                </div>
-                {% endif %}
+                <button
+                    class="delete-button btn btn-danger"
+                    onclick="deleteMemo('{{ memo._id }}', this)">
+                    삭제
+                </button>
+
+                <span
+                    class="link-like btn btn-link text-decoration-none" 
+                    onclick="likeMemo('{{ memo._id }}')">
+                    좋아요👍
+                </span>
 
             </div>
         </div>
         {% endfor %}
     </div>
 </div>
-<script>
-        // 1. PATCH 요청 함수
-        function updateMemo(id) {
-            const title = document.getElementById(`edit-title-${id}`).value;
-            const content = document.getElementById(`edit-content-${id}`).value;
 
-            fetch(`/update/${id}`, {
-                method: 'PATCH',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                },
-                body: new URLSearchParams({
-                    'title': title,
-                    'content': content
-                })
-            }).then(response => {
-                // 서버에서 보낸 redirect 주소(result 포함)를 인식하여 페이지 이동
-                if (response.redirected) {
-                    window.location.href = response.url;
-                } else {
-                    window.location.reload();
-                }
-            }).catch(error => console.error('Error:', error));
-        }
-    </script>
+<script>
+/* 메모 저장 (reload) */
+document.getElementById("memo-form").addEventListener("submit", e => {
+    e.preventDefault();
+    fetch("/memo", {
+        method: "POST",
+        body: new FormData(e.target)
+    }).then(() => location.reload());
+});
+
+
+/* 좋아요: 낙관적 UI + 즉시 재정렬 */
+function likeMemo(id) {
+    const card = document.querySelector(`.card[data-id="${id}"]`);
+    const likesEl = card.querySelector(".card-likes");
+
+    likesEl.innerText = Number(likesEl.innerText) + 1;
+    sortCards();
+
+    fetch(`/like/${id}`, { method: "POST" })
+        .catch(() => location.reload());
+}
+
+
+/* 좋아요 기준 내림차순 정렬 */
+function sortCards() {
+    const list = document.getElementById("card-list");
+    const cards = Array.from(list.children);
+
+    cards.sort((a, b) => {
+        return Number(
+            b.querySelector(".card-likes").innerText
+        ) - Number(
+            a.querySelector(".card-likes").innerText
+        );
+    });
+
+    cards.forEach(card => list.appendChild(card));
+}
+
+
+/* 삭제 (reload) */
+function deleteMemo(id, btn) {
+    fetch(`/delete/${id}`, { method: "DELETE" })
+        .then(() => location.reload());
+}
+
+
+/* 수정 모드 */
+function enterEditMode(btn) {
+    const card = btn.closest(".card");
+    card.classList.add("editing");
+
+    const title = card.querySelector(".card-title").innerText;
+    const content = card.querySelector(".card-text").innerText;
+
+    card.querySelector(".card-body").innerHTML = `
+        <input class="new-title form-control mb-2" value="${title}">
+        <textarea class="new-text form-control mb-2" rows="2">${content}</textarea>
+        <button class="btn btn-success"
+                onclick="saveEdit('${card.dataset.id}', this)">
+            저장
+        </button>
+    `;
+}
+
+
+/* 수정 저장 (reload) */
+function saveEdit(id, btn) {
+    const card = btn.closest(".card");
+    const title = card.querySelector(".new-title").value;
+    const content = card.querySelector(".new-text").value;
+
+    fetch(`/update/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({ title, content })
+    }).then(() => location.reload());
+}
+</script>
 </body>
 </html>
