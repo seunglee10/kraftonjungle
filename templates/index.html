@@ -50,7 +50,8 @@
             color: white;
         }
         .btn-edit:hover {
-            background-color: #17a2b8;
+            background-color: #138496;
+            color: white
         }
     </style>
 </head>
@@ -97,7 +98,7 @@
     <!-- 카드 목록 -->
     <div id="card-list">
         {% for memo in memos %}
-        <div class="card" data-id="{{ memo._id }}">
+        <div class="card" data-id="{{ memo._id }}" data-liked-at="0">
             <div class="card-body">
                 <h5 class="card-title">{{ memo.title }}</h5>
                 <p class="card-text">{{ memo.content }}</p>
@@ -148,6 +149,7 @@ function likeMemo(id) {
     const likesEl = card.querySelector(".card-likes");
 
     likesEl.innerText = Number(likesEl.innerText) + 1;
+    card.dataset.likedAt = Date.now();
     sortCards();
 
     fetch(`/like/${id}`, { method: "POST" })
@@ -161,11 +163,16 @@ function sortCards() {
     const cards = Array.from(list.children);
 
     cards.sort((a, b) => {
-        return Number(
-            b.querySelector(".card-likes").innerText
-        ) - Number(
-            a.querySelector(".card-likes").innerText
-        );
+        const likesA = Number(a.querySelector(".card-likes").innerText);
+        const likesB = Number(b.querySelector(".card-likes").innerText);
+
+        // 좋아요 수 우선
+        if (likesA !== likesB) {
+            return likesB - likesA;
+        }
+
+        // 좋아요 수가 같으면 최근에 누른 카드 우선
+        return Number(b.dataset.likedAt) - Number(a.dataset.likedAt);
     });
 
     cards.forEach(card => list.appendChild(card));
