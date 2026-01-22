@@ -133,7 +133,10 @@ document.getElementById("memo-form").addEventListener("submit", e => {
     fetch("/memo", {
         method: "POST",
         body: new FormData(e.target)
-    }).then(() => location.reload());
+    }).then(() => {
+        alert("포스팅 완료!");
+        location.reload();
+    });
 });
 
 
@@ -170,7 +173,10 @@ function sortCards() {
 /* 삭제 (reload) */
 function deleteMemo(id, btn) {
     fetch(`/delete/${id}`, { method: "DELETE" })
-        .then(() => location.reload());
+        .then(() => {
+            alert("삭제 완료!");
+            location.reload();
+        });
 }
 
 
@@ -203,7 +209,10 @@ function saveEdit(id, btn) {
         method: "PATCH",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
         body: new URLSearchParams({ title, content })
-    }).then(() => location.reload());
+    }).then(() => {
+        alert("수정 완료!");
+        location.reload();
+    });
 }
 </script>
 </body>
