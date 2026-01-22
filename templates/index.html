@@ -7,7 +7,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css?family=Stylish&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-    
+
 <style>
 * {
     font-family: 'Stylish', sans-serif;
@@ -25,35 +25,85 @@
     margin-bottom: 30px;
 }
 
+/* 신문식 레이아웃 */
 #card-list {
     column-count: 3;
-    column-gap: 1rem;
+    column-gap: 0.75rem;
 }
 
 .card {
     break-inside: avoid;
+    page-break-inside: avoid;
     height: 200px;
-    min-height: 200px;
-    margin-bottom: 10px;
+    margin-bottom: 1rem;
+}
+
+/* 카드 내부 grid */
+.card-body {
+    display: grid;
+    grid-template-rows: 1fr auto;
+    grid-template-areas:
+        "main"
+        "footer";
+}
+
+/* main 영역 */
+.card-main {
+    grid-area: main;
 }
 
 .card-title {
-    white-space: nowrap;
-    overflow-x: auto;
+    white-space: normal;
     overflow-y: hidden;
     scrollbar-width: none;
+    margin-bottom: 0.5rem;
 }
+
 
 .card-text {
     max-height: 55px;
     overflow-y: auto;
     scrollbar-width: none;
+    font-size: 1.2rem;
 }
 
 .card-text:hover {
     scrollbar-width: thin;
 }
+.card-title,
+.card-text,
+.new-title,
+.new-text {
+    word-break: break-word;
+    overflow-wrap: break-word;
+}
+/* 좋아요 수 (본문 하단) */
+.card-likes {
+    display: block;
+    margin-top: 4px;
+    font-size: 1.2rem; 
+    color: #333;
+}
 
+/* footer 영역 */
+.card-footer {
+    grid-area: footer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    background-color: #fff;
+    border-top: none;
+    padding-left: 0;
+}
+.card-footer button,
+.card-footer .link-like,
+.save-button {
+    height: 32px;
+    padding: 4px 12px;
+    font-size: 14px;
+}
+/* 수정 모드 */
 .new-title {
     white-space: nowrap;
     overflow-x: auto;
@@ -66,15 +116,11 @@
     overflow-y: auto;
     scrollbar-width: none;
 }
-
 .new-text:hover {
     scrollbar-width: thin;
 }
 
-.card.editing {
-    min-height: 200px;
-}
-
+/* 버튼 */
 .link-like {
     cursor: pointer;
     color: #0d6efd;
@@ -86,7 +132,7 @@
 }
 .btn-edit:hover {
     background-color: #138496;
-    color: white
+    color: white;
 }
 </style>
 </head>
@@ -94,7 +140,7 @@
 <body>
 <div class="wrap">
 
-    <!-- 메모 작성 영역-->
+    <!-- 메모 작성 -->
     <div class="post-box">
         <h1 class="display-4">
             나홀로메모장
@@ -108,7 +154,7 @@
                     name="title"
                     type="text"
                     class="form-control"
-                    maxlength="20"
+                    maxlength="14"
                     placeholder="제목을 입력하세요"
                     required
                 >
@@ -136,28 +182,32 @@
         {% for memo in memos %}
         <div class="card" data-id="{{ memo._id }}" data-liked-at="0">
             <div class="card-body">
-                <h5 class="card-title">{{ memo.title }}</h5>
-                <p class="card-text">{{ memo.content }}</p>
-                <div class="mb-2">
+
+                <div class="card-main">
+                    <h5 class="card-title">{{ memo.title }}</h5>
+                    <p class="card-text">{{ memo.content }}</p>
                     <span class="card-likes">{{ memo.likes }}</span>
                 </div>
-                <button
-                    class="edit-button btn btn-edit"
-                    onclick="enterEditMode(this)">
-                    수정
-                </button>
 
-                <button
-                    class="delete-button btn btn-danger"
-                    onclick="deleteMemo('{{ memo._id }}', this)">
-                    삭제
-                </button>
+                <div class="card-footer">
+                    <button
+                        class="edit-button btn btn-edit"
+                        onclick="enterEditMode(this)">
+                        수정
+                    </button>
 
-                <span
-                    class="link-like btn btn-link text-decoration-none" 
-                    onclick="likeMemo('{{ memo._id }}')">
-                    좋아요! <i class="bi bi-hand-thumbs-up"></i>
-                </span>
+                    <button
+                        class="delete-button btn btn-danger"
+                        onclick="deleteMemo('{{ memo._id }}', this)">
+                        삭제
+                    </button>
+
+                    <span
+                        class="link-like btn btn-link text-decoration-none"
+                        onclick="likeMemo('{{ memo._id }}')">
+                        좋아요! <i class="bi bi-hand-thumbs-up"></i>
+                    </span>
+                </div>
 
             </div>
         </div>
@@ -166,20 +216,16 @@
 </div>
 
 <script>
-/* 메모 저장 (reload) */
+/* 메모 저장 */
 document.getElementById("memo-form").addEventListener("submit", e => {
     e.preventDefault();
     fetch("/memo", {
         method: "POST",
         body: new FormData(e.target)
-    }).then(() => {
-        alert("포스팅 완료!");
-        location.reload();
-    });
+    }).then(() => location.reload());
 });
 
-
-/* 좋아요: 낙관적 UI + 즉시 재정렬 */
+/* 좋아요 */
 function likeMemo(id) {
     const card = document.querySelector(`.card[data-id="${id}"]`);
     const likesEl = card.querySelector(".card-likes");
@@ -192,8 +238,7 @@ function likeMemo(id) {
         .catch(() => location.reload());
 }
 
-
-/* 좋아요 기준 내림차순 정렬 */
+/* 좋아요 기준 정렬 */
 function sortCards() {
     const list = document.getElementById("card-list");
     const cards = Array.from(list.children);
@@ -202,40 +247,45 @@ function sortCards() {
         const likesA = Number(a.querySelector(".card-likes").innerText);
         const likesB = Number(b.querySelector(".card-likes").innerText);
 
-        // 좋아요 수 우선
+        // 1️⃣ 좋아요 수 우선
         if (likesA !== likesB) {
             return likesB - likesA;
         }
 
-        // 좋아요 수가 같으면 최근에 누른 카드 우선
+        // 2️⃣ 좋아요 수가 같으면 최근에 누른 카드 우선
         return Number(b.dataset.likedAt) - Number(a.dataset.likedAt);
     });
 
     cards.forEach(card => list.appendChild(card));
 }
 
-
-/* 삭제 (reload) */
-function deleteMemo(id, btn) {
+/* 삭제 */
+function deleteMemo(id) {
     fetch(`/delete/${id}`, { method: "DELETE" })
-        .then(() => {
-            alert("삭제 완료!");
-            location.reload();
-        });
+        .then(() => location.reload());
 }
 
-
-/* 수정 모드 */
+/* 수정 */
 function enterEditMode(btn) {
     const card = btn.closest(".card");
-    card.classList.add("editing");
 
     const title = card.querySelector(".card-title").innerText;
     const content = card.querySelector(".card-text").innerText;
 
-    card.querySelector(".card-body").innerHTML = `
-        <input class="new-title form-control mb-2"maxlength="20" value="${title}">
-        <textarea class="new-text form-control mb-2" rows="2">${content}</textarea>
+    const main = card.querySelector(".card-main");
+    const footer = card.querySelector(".card-footer");
+
+    main.innerHTML = `
+        <input
+            class="new-title form-control mb-2"
+            maxlength="14"
+            value="${title}">
+        <textarea
+            class="new-text form-control"
+            rows="2">${content}</textarea>
+    `;
+
+    footer.innerHTML = `
         <button class="btn btn-success"
                 onclick="saveEdit('${card.dataset.id}', this)">
             저장
@@ -243,8 +293,7 @@ function enterEditMode(btn) {
     `;
 }
 
-
-/* 수정 저장 (reload) */
+/* 수정 저장 */
 function saveEdit(id, btn) {
     const card = btn.closest(".card");
     const title = card.querySelector(".new-title").value;
@@ -254,10 +303,7 @@ function saveEdit(id, btn) {
         method: "PATCH",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
         body: new URLSearchParams({ title, content })
-    }).then(() => {
-        alert("수정 완료!");
-        location.reload();
-    });
+    }).then(() => location.reload());
 }
 </script>
 </body>
