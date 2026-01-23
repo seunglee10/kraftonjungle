@@ -22,6 +22,7 @@ def home():
     memo_list = list(memos.find().sort("likes", -1))
     for memo in memo_list:
         memo["_id"] = str(memo["_id"])
+
     return render_template("index.html", memos=memo_list)
 
 
@@ -33,6 +34,7 @@ def save_memo():
         "content": request.form["content"],
         "likes": 0
     })
+
     return jsonify({"result": "success"})
 
 
