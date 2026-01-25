@@ -5,7 +5,8 @@ from bson.errors import InvalidId
 
 app = Flask(__name__)
 
-client = MongoClient("mongodb://localhost:27017")
+client = MongoClient("mongodb://jungle:junglememo@localhost:27017/admin"
+)
 db = client.dbjungle
 memos = db.memos
 
